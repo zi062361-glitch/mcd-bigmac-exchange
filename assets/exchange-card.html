@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>麦门汇率 M-Currency Exchange · Big Mac Index 个人版</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #fff8ec;
+    color: #2b1d0e;
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header .logo {
+    display: inline-block; background: #da291c; color: #fff;
+    font-weight: 800; font-size: 15px; padding: 6px 18px; border-radius: 999px;
+    letter-spacing: 2px;
+  }
+  header h1 { font-size: 34px; margin-top: 14px; letter-spacing: 1px; }
+  header h1 .bm { color: #da291c; }
+  header p.sub { color: #8a7a63; margin-top: 8px; font-size: 14px; }
+  .panel {
+    background: #fff; border: 2px solid #2b1d0e; border-radius: 18px;
+    box-shadow: 6px 6px 0 #ffc72c; padding: 24px; margin-bottom: 24px;
+  }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+  .field { flex: 1; min-width: 180px; }
+  label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: #6b5a41; }
+  input[type=number], select {
+    width: 100%; padding: 10px 12px; font-size: 16px;
+    border: 2px solid #e6d9c3; border-radius: 10px; background: #fffdf8; outline: none;
+  }
+  input:focus { border-color: #ffc72c; }
+  .toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+  .toggle button {
+    flex: 1; padding: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
+    border: 2px solid #2b1d0e; background: #fff; border-radius: 10px;
+  }
+  .toggle button.active { background: #ffc72c; }
+  .btn {
+    width: 100%; padding: 14px; font-size: 18px; font-weight: 800; cursor: pointer;
+    background: #da291c; color: #fff; border: none; border-radius: 12px;
+    letter-spacing: 4px; box-shadow: 0 4px 0 #a01d13; transition: transform .05s;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: none; }
+  .hint { font-size: 12px; color: #a08f74; margin-top: 10px; line-height: 1.7; }
+  /* 汇率卡 */
+  #card {
+    display: none;
+    background: linear-gradient(160deg, #ffcf3f 0%, #ffc72c 55%, #f5b100 100%);
+    border: 3px solid #2b1d0e; border-radius: 20px; padding: 28px 26px;
+    box-shadow: 8px 8px 0 rgba(43,29,14,.25); position: relative; overflow: hidden;
+  }
+  #card::before {
+    content: "M"; position: absolute; right: -18px; top: -34px;
+    font-size: 160px; font-weight: 900; color: rgba(218,41,28,.14); font-family: Georgia, serif;
+  }
+  #card .tag {
+    font-size: 12px; font-weight: 800; letter-spacing: 3px; color: #7a5c00;
+  }
+  #card h2 { font-size: 24px; margin: 6px 0 18px; }
+  #card .big {
+    font-size: 46px; font-weight: 900; color: #da291c; line-height: 1.1;
+  }
+  #card .big small { font-size: 18px; color: #2b1d0e; font-weight: 700; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+  .cell {
+    background: rgba(255,255,255,.72); border-radius: 12px; padding: 12px 14px;
+    border: 1.5px solid rgba(43,29,14,.25);
+  }
+  .cell .k { font-size: 12px; color: #7a6a4d; }
+  .cell .v { font-size: 19px; font-weight: 800; margin-top: 3px; }
+  .title-line {
+    margin-top: 20px; padding: 14px 16px; background: #2b1d0e; color: #ffc72c;
+    border-radius: 14px; text-align: center;
+  }
+  .title-line .medal { font-size: 13px; letter-spacing: 2px; opacity: .85; }
+  .title-line .name { font-size: 22px; font-weight: 900; margin-top: 4px; }
+  .title-line .joke { font-size: 13px; margin-top: 6px; color: #fff; opacity: .9; }
+  .meta { font-size: 11px; color: #7a6a4d; margin-top: 16px; line-height: 1.7; }
+  .actions { margin-top: 14px; display: flex; gap: 10px; }
+  .actions button {
+    flex: 1; padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer;
+    border: 2px solid #2b1d0e; background: #fff; border-radius: 10px;
+  }
+  footer { text-align: center; font-size: 12px; color: #a08f74; margin-top: 28px; line-height: 1.8; }
+  footer a { color: #da291c; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="logo">M-CURRENCY</span>
+    <h1>🍔 麦门<span class="bm">汇率</span></h1>
+    <p class="sub">Big Mac Index · 个人版 —— 你的时薪不该用元衡量，该用巨无霸</p>
+  </header>
+
+  <div class="panel">
+    <div class="toggle">
+      <button id="modeSalary" class="active" onclick="setMode('salary')">按月薪</button>
+      <button id="modeHourly" onclick="setMode('hourly')">按时薪</button>
+    </div>
+    <div class="row">
+      <div class="field" id="salaryField">
+        <label>月薪（元）</label>
+        <input type="number" id="salary" placeholder="例如 8000" min="0">
+      </div>
+      <div class="field" id="hourlyField" style="display:none">
+        <label>时薪（元/小时）</label>
+        <input type="number" id="hourly" placeholder="例如 45" min="0">
+      </div>
+      <div class="field">
+        <label>巨无霸单价（元）</label>
+        <input type="number" id="price" value="24.50" step="0.1" min="0">
+      </div>
+      <div class="field">
+        <label>每日工时（小时）</label>
+        <input type="number" id="hours" value="8" step="0.5" min="1" max="24">
+      </div>
+    </div>
+    <button class="btn" onclick="calc()">💰 算出我的麦门汇率</button>
+    <p class="hint">💡 提示：单价填 24.5 只是示例。真正的仪式感是在 WorkBuddy 里装本 Skill，由麦当劳官方 MCP 查你附近门店的<b>实时价格</b>。价格仅供参考，以官方渠道为准。</p>
+  </div>
+
+  <div id="card">
+    <div class="tag">M-CURRENCY EXCHANGE RATE CARD</div>
+    <h2>麦门汇率卡</h2>
+    <div class="big"><span id="rHour">--</span> <small>巨无霸 / 小时</small></div>
+    <div class="grid">
+      <div class="cell"><div class="k">月薪购买力</div><div class="v" id="rMonth">--</div></div>
+      <div class="cell"><div class="k">吃掉一个巨无霸</div><div class="v" id="rMinutes">--</div></div>
+      <div class="cell"><div class="k">一杯 30 元咖啡</div><div class="v" id="rCoffee">--</div></div>
+      <div class="cell"><div class="k">年度巨无霸自由指数</div><div class="v" id="rYear">--</div></div>
+    </div>
+    <div class="title-line">
+      <div class="medal">🏅 你的麦门称号</div>
+      <div class="name" id="rTitle">--</div>
+      <div class="joke" id="rJoke">--</div>
+    </div>
+    <div class="meta" id="rMeta"></div>
+    <div class="actions">
+      <button onclick="regenJoke()">🎲 换个梗语</button>
+      <button onclick="alert('截图保存这张卡，转发给同事，让他们也破防一下 🍔')">📸 保存 / 分享</button>
+    </div>
+  </div>
+
+  <footer>
+    麦门汇率 M-Currency Exchange · 麦当劳程序员创意开发大赛参赛作品（非麦当劳官方产品）<br>
+    数据仅供娱乐参考，价格以 <a href="https://open.mcd.cn/mcp" target="_blank">麦当劳官方渠道</a> 实时结果为准 · 快乐无价，但巨无霸有价
+  </footer>
+</div>
+
+<script>
+  const JOKES = {
+    "巨无霸联邦储备银行行长": ["你的时薪，麦门以此为锚定货币。", "建议麦门把你印在限定包装上。"],
+    "巨无霸自由户": ["想吃就吃，麦门常在。", "板烧自由只是你的起点。"],
+    "麦门中产": ["板烧随便点，甜筒不眨眼。", "巨无霸自由达成，下一关：麦乐鸡派对。"],
+    "薯条编制内": ["有编，但只有薯条那么长。", "薯条续命，稳定但不能多想。"],
+    "甜筒学徒": ["华夫筒是你的年度理财产品。", "1 元甜筒日，是你的生日。"],
+    "新地候补生": ["先立业，再立蛋卷冰淇淋。", "新地在等你，先把手头的活干完。"],
+    "板烧挣扎者": ["麦门不哭，站起来撸。", "今天也是被 1+1 套餐拯救的一天。"]
+  };
+
+  let mode = "salary";
+  let state = { perHour: 0, perMonth: 0, minutes: 0, title: "" };
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById("modeSalary").classList.toggle("active", m === "salary");
+    document.getElementById("modeHourly").classList.toggle("active", m === "hourly");
+    document.getElementById("salaryField").style.display = m === "salary" ? "" : "none";
+    document.getElementById("hourlyField").style.display = m === "hourly" ? "" : "none";
+  }
+
+  function rank(rate) {
+    if (rate >= 3.0) return "巨无霸联邦储备银行行长";
+    if (rate >= 2.0) return "巨无霸自由户";
+    if (rate >= 1.2) return "麦门中产";
+    if (rate >= 0.8) return "薯条编制内";
+    if (rate >= 0.5) return "甜筒学徒";
+    if (rate >= 0.2) return "新地候补生";
+    return "板烧挣扎者";
+  }
+
+  function fmt(n, digits) {
+    return Number(n).toLocaleString("zh-CN", { maximumFractionDigits: digits ?? 1 });
+  }
+
+  function calc() {
+    const price = parseFloat(document.getElementById("price").value);
+    const hoursPerDay = parseFloat(document.getElementById("hours").value) || 8;
+    let hourly = mode === "salary"
+      ? parseFloat(document.getElementById("salary").value) / 21.75 / hoursPerDay
+      : parseFloat(document.getElementById("hourly").value);
+    let monthly = mode === "salary"
+      ? parseFloat(document.getElementById("salary").value)
+      : hourly * hoursPerDay * 21.75;
+
+    if (!price || price <= 0 || !hourly || hourly <= 0) {
+      alert("先把月薪/时薪和巨无霸单价填好，麦门才好给你算账 🍔");
+      return;
+    }
+    const perHour = hourly / price;
+    state = {
+      perHour, perMonth: monthly / price,
+      minutes: price / hourly * 60,
+      title: rank(perHour),
+      price, hourly, monthly
+    };
+    render();
+    document.getElementById("card").style.display = "block";
+    document.getElementById("card").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function render() {
+    const s = state;
+    document.getElementById("rHour").textContent = fmt(s.perHour, 2);
+    document.getElementById("rMonth").textContent = fmt(s.perMonth, 0) + " 个/月";
+    document.getElementById("rMinutes").textContent = "= 打工 " + fmt(s.minutes, 1) + " 分钟";
+    document.getElementById("rCoffee").textContent = fmt(30 / s.hourly * 60, 1) + " 分钟工时";
+    document.getElementById("rYear").textContent = fmt(s.perMonth * 12, 0) + " 个/年";
+    document.getElementById("rTitle").textContent = s.title;
+    regenJoke();
+    document.getElementById("rMeta").textContent =
+      "汇率锚点：巨无霸 ¥" + fmt(s.price, 2) + " · 时薪 ¥" + fmt(s.hourly, 2) +
+      " · 生成时间 " + new Date().toLocaleString("zh-CN") +
+      " · 本卡由麦门汇率 Skill 生成，仅供参考与娱乐";
+  }
+
+  function regenJoke() {
+    const list = JOKES[state.title] || ["麦门。"];
+    document.getElementById("rJoke").textContent = "「" + list[Math.floor(Math.random() * list.length)] + "」";
+  }
+</script>
+</body>
+</html>
